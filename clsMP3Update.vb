@@ -192,6 +192,18 @@ Public Class clsMP3Update
                 ElapsedTime = strTime
         End Select
     End Function
+    Private Function GetFileNameFromTitle(ByVal Title As String) As String
+        If InStr(Title, "/") > 0 Then Title = Replace(Title, "/", "-")
+        If InStr(Title, "\") > 0 Then Title = Replace(Title, "\", "-")
+        If InStr(Title, ":") > 0 Then Title = Replace(Title, ":", "-")
+        If InStr(Title, "*") > 0 Then Title = Replace(Title, "*", "-")
+        If InStr(Title, """") > 0 Then Title = Replace(Title, """", "'")
+        If InStr(Title, "?") > 0 Then Title = Replace(Title, "?", "_")
+        If InStr(Title, "<") > 0 Then Title = Replace(Title, "<", "_")
+        If InStr(Title, ">") > 0 Then Title = Replace(Title, ">", "_")
+        If InStr(Title, "|") > 0 Then Title = Replace(Title, "|", "-")
+        Return Title
+    End Function
     Public Sub CheckFiles(ByVal BaseDir As DirectoryInfo)
         Dim SQLSource As String
         Try
@@ -225,7 +237,7 @@ Public Class clsMP3Update
                     Dim objMP3Info As New MP3.MP3Info(fi.FullName)
                     If (objMP3Info.ID3v1Tag.TagAvailable) Then
                         With objMP3Info.ID3v1Tag
-                            Dim PreferredFileName As String = String.Format("{0:00} - {1} - {2}.mp3", .Track, .Artist, .Title)
+                            Dim PreferredFileName As String = String.Format("{0:00} - {1} - {2}.mp3", .Track, .Artist, GetFileNameFromTitle(.Title))
                             If fi.Name <> PreferredFileName Then
                                 If MessageBox.Show(String.Format("""{0}"" does not match preferred name ""{1}""", fi.Name, PreferredFileName), "Rename?", MessageBoxButtons.YesNo) = DialogResult.Yes Then
                                     fi.MoveTo(String.Format("{0}\{1}", fi.DirectoryName, PreferredFileName))
