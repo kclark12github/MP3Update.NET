@@ -61,7 +61,7 @@ Public Class clsMP3Update
             SQLCommand = Nothing
         End Try
     End Sub
-    Public Function DoFileListDB(ByVal RootDir As String, ByVal DatabaseName As String) As Integer
+    Public Function UpdateDB(ByVal RootDir As String, ByVal DatabaseName As String) As Integer
         Dim ConnectionString As String
         Dim frm As frmProgress
         Dim Message As String
@@ -192,6 +192,59 @@ Public Class clsMP3Update
                 ElapsedTime = strTime
         End Select
     End Function
+    Public Sub CheckFiles(ByVal BaseDir As DirectoryInfo)
+        Dim SQLSource As String
+        Try
+            Dim diList As DirectoryInfo() = BaseDir.GetDirectories()
+            For Each di As DirectoryInfo In diList
+                Select Case di.Name
+                    Case "System Volume Information"
+                    Case "Temporary Internet Files"
+                    Case Else
+                        Try
+                            mCount += 1
+                            RaiseEvent List(di.FullName)
+                            Application.DoEvents() : If mCancel Then Exit Try
+                        Catch ex As Exception
+                            Dim Message As String = String.Format("Error processing {0}; ", di.Name) & vbCrLf
+                            Message &= vbCrLf
+                            Message &= String.Format("Exception: {0}", ex.ToString)
+                            mEventLog.WriteEntry(Message)
+                        End Try
+                        Application.DoEvents() : If mCancel Then Exit Try
+                        CheckFiles(di)
+                End Select
+            Next
+            Dim fiList As FileInfo() = BaseDir.GetFiles()
+            For Each fi As FileInfo In fiList
+                Try
+                    mCount += 1
+                    RaiseEvent List(fi.FullName)
+                    Application.DoEvents() : If mCancel Then Exit Try
+
+                    Dim objMP3Info As New MP3.MP3Info(fi.FullName)
+                    If (objMP3Info.ID3v1Tag.TagAvailable) Then
+                        With objMP3Info.ID3v1Tag
+                            Dim PreferredFileName As String = String.Format("{0:00} - {1} - {2}.mp3", .Track, .Artist, .Title)
+                            If fi.Name <> PreferredFileName Then
+                                If MessageBox.Show(String.Format("""{0}"" does not match preferred name ""{1}""", fi.Name, PreferredFileName), "Rename?", MessageBoxButtons.YesNo) = DialogResult.Yes Then
+                                    fi.MoveTo(String.Format("{0}\{1}", fi.DirectoryName, PreferredFileName))
+                                End If
+                            End If
+                        End With
+                    End If
+                Catch ex As Exception
+                    Dim Message As String = String.Format("Error processing {0}; ", fi.Name) & vbCrLf
+                    Message &= vbCrLf
+                    Message &= String.Format("Exception: {0}", ex.ToString)
+                    mEventLog.WriteEntry(Message)
+                End Try
+                Application.DoEvents() : If mCancel Then Exit Try
+            Next
+        Catch ex As Exception
+            MessageBox.Show(ex.ToString, mAppName & ".CheckFiles", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
+        End Try
+    End Sub
     Public Sub ListFiles(ByVal BaseDir As DirectoryInfo)
         Dim SQLSource As String
         Dim ColumnList As String = "[Path],[Size],[Attributes],[CreationTime],[LastAccessTime],[LastWriteTime]"
@@ -267,17 +320,45 @@ Public Class clsMP3Update
     End Sub
     'Entry point which delegates to C-style main Private Function
     Public Overloads Shared Sub Main()
-        System.Environment.ExitCode = Main(System.Environment.GetCommandLineArgs())
+        System.Environment.ExitCode = MainCheckFiles(System.Environment.GetCommandLineArgs())
     End Sub
-    Private Overloads Shared Function Main(ByVal args() As String) As Integer
-        Dim fl As New clsFileListDB
+    Private Overloads Shared Function MainCheckFiles(ByVal args() As String) As Integer
+        Dim fl As New clsMP3Update
+        Try
+            Application.EnableVisualStyles()
+            Application.DoEvents()
+
+            If args.Length < 2 Then
+                Dim Message As String = _
+                    "MP3Update Options:" & vbCrLf & _
+                    vbTab & "args(0) = Full path name of the executable" & vbCrLf & _
+                    vbTab & "args(1) = Root directory to check"
+                MessageBox.Show(Message, fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
+                Return 1
+            End If
+            Dim RootDir As String = args(1)
+            Dim Root As DirectoryInfo = New DirectoryInfo(RootDir)
+            If Not Root.Exists Then
+                MessageBox.Show(String.Format("{0} does not exist!", RootDir), fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
+                Return 1
+            End If
+            fl.CheckFiles(Root)
+            Return 0
+        Catch ex As Exception
+            MessageBox.Show(ex.ToString, fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
+            Return 1
+        Finally
+        End Try
+    End Function
+    Private Overloads Shared Function MainUpdateDB(ByVal args() As String) As Integer
+        Dim fl As New clsMP3Update
         Try
             Application.EnableVisualStyles()
             Application.DoEvents()
 
             If args.Length < 3 Then
                 Dim Message As String = _
-                    "FileList Options:" & vbCrLf & _
+                    "MP3Update Options:" & vbCrLf & _
                     vbTab & "args(0) = Full path name of the executable" & vbCrLf & _
                     vbTab & "args(1) = Root directory to list files" & vbCrLf & _
                     vbTab & "args(2) = Database name"
@@ -286,7 +367,7 @@ Public Class clsMP3Update
             End If
             Dim RootDir As String = args(1)
             Dim DatabaseName As String = args(2)
-            Return fl.DoFileListDB(RootDir, DatabaseName)
+            Return fl.UpdateDB(RootDir, DatabaseName)
         Catch ex As Exception
             MessageBox.Show(ex.ToString, fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
             Return 1

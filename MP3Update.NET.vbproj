@@ -25,7 +25,7 @@
                 OptionExplicit = "On"
                 OptionStrict = "Off"
                 RootNamespace = "MP3Update.NET"
-                StartupObject = "MP3Update.NET.Form1"
+                StartupObject = "MP3Update.NET.clsMP3Update"
             >
                 <Config
                     Name = "Debug"

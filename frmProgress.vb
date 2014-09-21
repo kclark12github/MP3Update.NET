@@ -1,6 +1,6 @@
 Public Class frmProgress
     Inherits System.Windows.Forms.Form
-    Public Sub New(ByVal objBase As clsFileListDB)
+    Public Sub New(ByVal objBase As clsMP3Update)
         MyBase.New()
 
         'This call is required by the Windows Form Designer.
@@ -77,14 +77,14 @@ Public Class frmProgress
     End Sub
 
 #End Region
-    Private WithEvents mBaseClass As clsFileListDB
+    Private WithEvents mBaseClass As clsMP3Update
     Private mOffset As Single
     Private mOKtoClose As Boolean
-    Public Property BaseClass() As clsFileListDB
+    Public Property BaseClass() As clsMP3Update
         Get
             Return mBaseClass
         End Get
-        Set(ByVal Value As clsFileListDB)
+        Set(ByVal Value As clsMP3Update)
             mBaseClass = Value
         End Set
     End Property
