@@ -2,7 +2,7 @@ Module Module1
     Sub Main()
         Dim objMP3Info As New MP3.MP3Info()
         'objMP3Info.Filename = "C:\Documents and Settings\All Users\Documents\My Music\Rock\Collins, Phil\1985 - No Jacket Required\10 - Take Me Home.mp3"
-        objMP3Info.Filename = "C:\Documents and Settings\All Users\Documents\My Music\Rock\Various Artists\Time Life Music\Modern Rock - 1980-1981 (Disc 1)\04 - Brass In Pocket.mp3"
+        objMP3Info.Filename = "D:\Users\kfc12\Music\Rock\Collins, Phil\1985 - No Jacket Required\10 - Take Me Home.mp3"
 
         'Console.WriteLine("Filesize:{0}{1:#,##0.0#} KB", vbTab, objMP3Info.Filesize / 1024)
         'Console.WriteLine("Sampling:{0}{1:0.0} KHz", vbTab, objMP3Info.SamplingRateFrequency / 1000)
@@ -23,11 +23,11 @@ Module Module1
 
         If (objMP3Info.ID3v1Tag.TagAvailable) Then
             With objMP3Info
-                Console.WriteLine("{0}\{1}\{2} - {3}\{4:00} - {5}.mp3{6} {7} {8:00}:{9:00} @ {10} kbps/{11:0.0} KHz", .ID3v1Tag.GetGenreString(.ID3v1Tag.Genre), .ID3v1Tag.Artist, .ID3v1Tag.Year, .ID3v1Tag.Album, .ID3v1Tag.Track, .ID3v1Tag.Title, vbTab, .ChannelMode, Int(.Length / 60), .Length Mod 60, .Bitrate \ 1000, .SamplingRateFrequency / 1000)
+                Console.WriteLine($"{ .ID3v1Tag.Genre}\{ .ID3v1Tag.Artist}\{ .ID3v1Tag.Year} - { .ID3v1Tag.Album}\{ .ID3v1Tag.Track:00} - { .ID3v1Tag.Title}.mp3{vbTab} { .ChannelMode} {Int(.Length / 60):00}:{ .Length Mod 60:00} @ { .Bitrate \ 1000} kbps/{ .SamplingRateFrequency / 1000:0.0} KHz")
             End With
         End If
 
-        ''' Update the tag
+        'Update the tag
         'objMP3Info.ID3v1Tag.Title = "Another title"
         'objMP3Info.ID3v1Tag.Update()
         Console.ReadLine()

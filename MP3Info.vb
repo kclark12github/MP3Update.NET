@@ -40,9 +40,9 @@ Namespace MP3
     'Provides methods to retrieve informations about MPEG files and to get and set 
     'different tag formats.
 
-    '<para>Use the <b>MP3Info</b> class for typical operations on MPEG files, like reading 
+    'Use the MP3Info class for typical operations on MPEG files, like reading 
     'and writing ID3 v1 and v2 tags or getting general MPEG informations.
-    '<note type="note">
+    '
     'In members that accept a path as an input string, that path must be well-formed 
     'or an exception is raised. For example, if a path is fully qualified but begins 
     'with a space, the path is not trimmed in methods of the class. Therefore, the path 
@@ -50,27 +50,22 @@ Namespace MP3
     'paths cannot be fully qualified twice. For example, "c:\temp c:\windows" also 
     'raises an exception in most cases. Ensure that your paths are well-formed when 
     'using methods that accept a path string.
-    '</note></para>
-    '<para>This class was made by using informations from the following websites:
-    '<list type="bullet">
-    '<item><a href="http://gabriel.mp3-tech.org/mp3infotag.html">http://gabriel.mp3-tech.org/mp3infotag.html</a></item>
-    '<item><a href="http://www.multiweb.cz/twoinches/MP3inside.htm#MP3FileStructure">http://www.multiweb.cz/twoinches/MP3inside.htm#MP3FileStructure</a></item>
-    '<item><a href="http://www.codeguru.com/vb/gen/vb_multimedia/mp3s/article.php/c4267">http://www.codeguru.com/vb/gen/vb_multimedia/mp3s/article.php/c4267</a></item>
-    '<item><a href="http://www.getid3.org/">http://www.getid3.org/</a></item>
-    '<item><a href="http://www.mp3-converter.com/mp3codec/mp3_anatomy.htm">http://www.mp3-converter.com/mp3codec/mp3_anatomy.htm</a></item>
-    '<item><a href="http://www.mp3-tech.org/">http://www.mp3-tech.org/</a></item>
-    '<item><a href="http://www.codeproject.com/audio/MPEGAudioInfo.asp">http://www.codeproject.com/audio/MPEGAudioInfo.asp</a></item>
-    '</list></para>
-    ''' </remarks>
-    ''' <example>
-    '''		The following example demonstrates some of the main members of the 
-    '''		<b>MP3Info</b> class.
-    '''		<code language="VB.NET">
-    '''		[Visual Basic]
-    '''		Dim objInfo As New MP3Info("c:\test.mp3")
-    '''		...
-    '''		</code>
-    ''' </example>
+    '
+    'This class was made by using informations from the following websites:
+    '
+    'http://gabriel.mp3-tech.org/mp3infotag.html
+    'http://www.multiweb.cz/twoinches/MP3inside.htm#MP3FileStructure
+    'http://www.codeguru.com/vb/gen/vb_multimedia/mp3s/article.php/c4267
+    'http://www.getid3.org/
+    'http://www.mp3-converter.com/mp3codec/mp3_anatomy.htm
+    'http://www.mp3-tech.org/
+    'http://www.codeproject.com/audio/MPEGAudioInfo.asp
+    '
+    '<example>
+    '		The following example demonstrates some of the main members of the MP3Info class.
+    '		[Visual Basic]
+    '		Dim objInfo As New MP3Info("c:\test.mp3")
+    '		...
     Public Class MP3Info
         'Declarations for friend variables holding the property values
         Friend f_strFilename As String
@@ -370,27 +365,27 @@ Namespace MP3
         End Sub
         Private Function GetID3v1Tag() As ID3v1Tag
 
-            ''' Declarations
+            ' Declarations
             Dim objFS As FileStream
             Dim objReader As BinaryReader
             Dim bytBytes() As Byte
             Dim strBytes As String
             Dim objTag As ID3v1Tag
 
-            ''' Open the filestream
+            ' Open the filestream
             objFS = New FileStream(f_strFilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
 
-            ''' Create the BinaryReader object to read the file
+            ' Create the BinaryReader object to read the file
             objReader = New BinaryReader(objFS)
 
-            ''' Create a new object to hold the tag content
+            ' Create a new object to hold the tag content
             objTag = New ID3v1Tag
 
             ' By default, there's no tag
             objTag.m_blnTagAvailable = False
 
-            ''' The v1 tag should be found at the end of the file and has a fixed size of 
-            ''' 128 bytes, so have a look if there's one
+            ' The v1 tag should be found at the end of the file and has a fixed size of 
+            ' 128 bytes, so have a look if there's one
             objFS.Seek(-128, SeekOrigin.End)
             strBytes = BytesToString(objReader.ReadBytes(3))
             If (strBytes.ToUpper = "TAG") Then
@@ -400,27 +395,27 @@ Namespace MP3
 
                 With objTag
 
-                    ''' Read title, remove possible junk bytes and assign value to the property
+                    ' Read title, remove possible junk bytes and assign value to the property
                     strBytes = BytesToString(objReader.ReadBytes(30)).Replace(Chr(0), "")
                     .m_strTitle = strBytes
 
-                    ''' Read artist, remove possible junk bytes and assign value to the property
+                    ' Read artist, remove possible junk bytes and assign value to the property
                     strBytes = BytesToString(objReader.ReadBytes(30)).Replace(Chr(0), "")
                     .m_strArtist = strBytes
 
-                    ''' Read album, remove possible junk bytes and assign value to the property
+                    ' Read album, remove possible junk bytes and assign value to the property
                     strBytes = BytesToString(objReader.ReadBytes(30)).Replace(Chr(0), "")
                     .m_strAlbum = strBytes
 
-                    ''' Read year
+                    ' Read year
                     strBytes = BytesToString(objReader.ReadBytes(4)).Replace(Chr(0), "")
                     .m_strYear = strBytes
 
-                    ''' Read 30 bytes for comment and track
+                    ' Read 30 bytes for comment and track
                     bytBytes = objReader.ReadBytes(30)
 
-                    ''' If byte 28 is zero and byte 29 non-zero, the tag has version 1.1, 
-                    ''' otherwise 1.0
+                    ' If byte 28 is zero and byte 29 non-zero, the tag has version 1.1, 
+                    ' otherwise 1.0
                     If ((bytBytes(28) = 0) And (bytBytes(29) <> 0)) Then
                         .m_bytTagVersion = ID3v1TagVersionEnum.Version11
                         strBytes = BytesToString(bytBytes, 0, 28).Replace(Chr(0), "")
@@ -432,55 +427,55 @@ Namespace MP3
                     End If
                     .m_strComment = strBytes
 
-                    ''' Read genre
+                    ' Read genre
                     .m_bytGenre = objReader.ReadByte
 
                 End With
 
             End If
 
-            ''' Close the reader and the filestream object
+            ' Close the reader and the filestream object
             objReader.Close()
             objFS.Close()
 
-            ''' Return the ID3v1 tag object
+            ' Return the ID3v1 tag object
             Return objTag
 
         End Function
         Private Sub SetID3v1Tag()
 
-            ''' Declarations
+            ' Declarations
             Dim objFS As FileStream
             Dim objReader As BinaryReader
             Dim objWriter As BinaryWriter
             Dim strBytes As String
 
-            ''' Open the filestream
+            ' Open the filestream
             objFS = New FileStream(f_strFilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite)
 
-            ''' Create the BinaryReader object to read the file
+            ' Create the BinaryReader object to read the file
             objReader = New BinaryReader(objFS)
 
-            ''' The v1 tag should be found at the end of the file and has a fixed size of 
-            ''' 128 bytes, so have a look if there's one
+            ' The v1 tag should be found at the end of the file and has a fixed size of 
+            ' 128 bytes, so have a look if there's one
             objFS.Seek(-128, SeekOrigin.End)
             strBytes = BytesToString(objReader.ReadBytes(3))
             If (strBytes.ToUpper = "TAG") Then
 
-                ''' There is an existing tag, so rewind filestream position 3 bytes
+                ' There is an existing tag, so rewind filestream position 3 bytes
                 objFS.Seek(-3, SeekOrigin.Current)
 
             Else
 
-                ''' No tag found, so set filestream position to end of file
+                ' No tag found, so set filestream position to end of file
                 objFS.Seek(0, SeekOrigin.End)
 
             End If
 
-            ''' Create the BinaryWriter object to write the tag
+            ' Create the BinaryWriter object to write the tag
             objWriter = New BinaryWriter(objFS)
 
-            ''' Write the tag
+            ' Write the tag
             objWriter.Write("TAG".ToCharArray)
             objWriter.Write(Me.ID3v1Tag.Title.PadRight(30, Chr(0)).ToCharArray)
             objWriter.Write(Me.ID3v1Tag.Artist.PadRight(30, Chr(0)).ToCharArray)
@@ -497,27 +492,26 @@ Namespace MP3
             objWriter.Write(Me.ID3v1Tag.Genre)
             objWriter.Flush()
 
-            ''' Close the BinaryReader and BinaryWriter objects and the base stream
+            ' Close the BinaryReader and BinaryWriter objects and the base stream
             objWriter.Close()
             objReader.Close()
         End Sub
         Private Function ReadHeaders() As Boolean
 
-            ''' Declarations
+            ' Declarations
             Dim objFS As FileStream
             Dim objBitArray As BitArray
             Dim bytBytes(2) As Byte
             Dim bytXingBytes(3) As Byte
-            Dim i, j, intIndex, intOffset, intStart As Integer
+            Dim i, j, intIndex, intOffset As Integer
             Dim objConverter As New System.Text.UTF8Encoding
             Dim blnReturn As Boolean = False
             Dim intXingOffset As Integer
             Dim bytFlags(3), bytFrameCount(3), bytFileLength(3), bytQuality(3) As Byte
             Dim intTOC(99) As Integer
-            Dim objBitConverter As BitConverter
             Dim bytXingHeader(116) As Byte
 
-            ''' Open the filestream
+            ' Open the filestream
             Try
                 objFS = New FileStream(f_strFilename, FileMode.Open)
                 If (objFS.CanRead) Then
@@ -529,26 +523,26 @@ Namespace MP3
                 Throw New IO.IOException("An error occurred while trying to open the file.")
             End Try
 
-            ''' Read the headers
+            ' Read the headers
             Try
 
-                ''' Read the MPEG header
+                ' Read the MPEG header
                 While ((objFS.Position + 4) <= objFS.Length)
 
-                    ''' Read a byte from file and check if the bits are all set 
+                    ' Read a byte from file and check if the bits are all set 
                     If (objFS.ReadByte = 255) Then
 
-                        ''' Read the next 3 bytes (maybe the complete header)
+                        ' Read the next 3 bytes (maybe the complete header)
                         objFS.Read(bytBytes, 0, 3)
                         objBitArray = New BitArray(bytBytes)
 
-                        ''' If bits 9 to 11 are set, we found the header
+                        ' If bits 9 to 11 are set, we found the header
                         If (objBitArray(7)) And (objBitArray(6)) And (objBitArray(5)) Then
 
-                            ''' Store the header position
+                            ' Store the header position
                             f_intHeaderPos = objFS.Position
 
-                            ''' Change the bit order to a more readable format
+                            ' Change the bit order to a more readable format
                             intIndex = 0
                             intOffset = 0
                             For j = 0 To 2
@@ -564,7 +558,7 @@ Namespace MP3
 
                         Else
 
-                            ''' Rewind 3 bytes
+                            ' Rewind 3 bytes
                             objFS.Position -= 3
 
                         End If
@@ -573,11 +567,11 @@ Namespace MP3
 
                 End While
 
-                ''' Adjust audio size
+                ' Adjust audio size
                 f_intAudioSize = Me.Filesize - f_intHeaderPos
 
-                ''' Read the extended (Xing) header
-                ''' Set position of filestream (Xing header offset)
+                ' Read the extended (Xing) header
+                ' Set position of filestream (Xing header offset)
                 If (Me.MPEGVersion = MPEGVersionEnum.MPEG1) Then
                     If (Me.ChannelMode = ChannelModeEnum.SingleChannel) Then
                         intXingOffset = 17
@@ -593,24 +587,24 @@ Namespace MP3
                 End If
                 objFS.Position = Me.HeaderPosition + intXingOffset
 
-                ''' Read 4 bytes
+                ' Read 4 bytes
                 objFS.Read(bytXingBytes, 0, 4)
 
-                ''' Check for Xing header
+                ' Check for Xing header
                 If (objConverter.GetString(bytXingBytes).ToLower = "xing") Or (objConverter.GetString(bytXingBytes).ToLower = "info") Then
 
-                    ''' Read the extended (Xing) header
+                    ' Read the extended (Xing) header
                     objFS.Read(bytXingHeader, 0, 116)
 
-                    ''' Check the encoding
+                    ' Check the encoding
                     If (objConverter.GetString(bytXingBytes).ToLower = "xing") Then
                         f_blnVBR = True
                     End If
 
-                    ''' Adjust audio size
+                    ' Adjust audio size
                     f_intAudioSize -= 120
 
-                    ''' Populate the extended (Xing) header
+                    ' Populate the extended (Xing) header
                     For i = 3 To 0 Step -1
                         bytFlags(3 - i) = bytXingHeader(i)
                         bytFrameCount(3 - i) = bytXingHeader(4 + i)
@@ -623,26 +617,26 @@ Namespace MP3
                     Next
 
                     With m_objXingHeader
-                        .Flags = objBitConverter.ToInt32(bytFlags, 0)
-                        .FileLenght = objBitConverter.ToInt32(bytFileLength, 0)
-                        .FrameCount = objBitConverter.ToInt32(bytFrameCount, 0)
+                        .Flags = BitConverter.ToInt32(bytFlags, 0)
+                        .FileLenght = BitConverter.ToInt32(bytFileLength, 0)
+                        .FrameCount = BitConverter.ToInt32(bytFrameCount, 0)
                         .TOC = intTOC
-                        .Quality = objBitConverter.ToInt32(bytQuality, 0)
+                        .Quality = BitConverter.ToInt32(bytQuality, 0)
                     End With
 
                 End If
 
-                ''' Read the extended (VBRI) header
-                ''' Set position of filestream (VBRI header offset)
+                ' Read the extended (VBRI) header
+                ' Set position of filestream (VBRI header offset)
                 objFS.Position = Me.HeaderPosition + 32
 
-                ''' Read 4 bytes
+                ' Read 4 bytes
                 objFS.Read(bytXingBytes, 0, 4)
 
-                ''' Check for Xing header
+                ' Check for Xing header
                 If (objConverter.GetString(bytXingBytes).ToLower = "vbri") Then
 
-                    ''' TBD
+                    ' TBD
 
                 End If
 
@@ -672,7 +666,7 @@ Namespace MP3
         End Function
     End Class
     Public Class ID3v1Tag
-        ''' Declarations for friend variables holding the property values
+        ' Declarations for friend variables holding the property values
         Friend m_blnTagAvailable As Boolean = False
         Friend m_bytTagVersion As ID3v1TagVersionEnum = ID3v1TagVersionEnum.Version10
         Friend m_strArtist As String = ""
@@ -776,7 +770,7 @@ Namespace MP3
                 End Select
             End Set
         End Property
-        Public Property Genre() As Byte
+        Public Property RawGenre() As Byte
             Get
                 Return m_bytGenre
             End Get
@@ -784,24 +778,29 @@ Namespace MP3
                 m_bytGenre = Value
             End Set
         End Property
-        Public Function GetGenreString(ByVal bytGenre As Byte) As String
+        Public ReadOnly Property Genre() As String
+            Get
+                Return GetGenreString(m_bytGenre)
+            End Get
+        End Property
+        Private Function GetGenreString(ByVal bytGenre As Byte) As String
             Try
-                Dim strGenres() As String = {"Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge", _
-                "Hip - Hop", "Jazz", "Metal", "New Age", "Oldies", "Other", "Pop", "R&B", "Rap", "Reggae", "Rock", "Techno", _
-                "Industrial", "Alternative", "Ska", "Death Metal", "Pranks", "Soundtrack", "Euro -Techno", "Ambient", _
-                "Trip -Hop", "Vocal", "Jazz Funk", "Fusion", "Trance", "Classical", "Instrumental", "Acid", "House", "Game", _
-                "Sound Clip", "Gospel", "Noise", "AlternRock", "Bass", "Soul", "Punk", "Space", "Meditative", _
-                "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic", "Darkwave", "Techno -Industrial", "Electronic", _
-                "Pop -Folk", "Eurodance", "Dream", "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap", _
-                "Pop/Funk", "Jungle", "Native American", "Cabaret", "New Wave", "Psychadelic", "Rave", "Showtunes", "Trailer", _
-                "Lo - Fi", "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll", "Hard Rock", _
-                "Folk", "Folk/Rock", "National Folk", "Swing", "Bebob", "Latin", "Revival", "Celtic", "Bluegrass", "Avantgarde", _
-                "Gothic Rock", "Progressive Rock", "Psychedelic Rock", "Symphonic Rock", "Slow Rock", "Big Band", "Chorus", _
-                "Easy Listening", "Acoustic", "Humour", "Speech", "Chanson", "Opera", "Chamber Music", "Sonata", "Symphony", _
-                "Booty Bass", "Primus", "Porn Groove", "Satire", "Slow Jam", "Club", "Tango", "Samba", "Folklore", "Ballad", _
-                "Power Ballad", "Rhythmic Soul", "Freestyle", "Duet", "Punk Rock", "Drum Solo", "A Cappella", "Euro - House", _
-                "Dance Hall", "Goa", "Drum & Bass", "Club - House", "Hardcore", "Terror", "Indie", "BritPop", "Negerpunk", _
-                "Polsk Punk", "Beat", "Christian Gangsta Rap", "Heavy Metal", "Black Metal", "Crossover", "Contemporary Christian", _
+                Dim strGenres() As String = {"Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge",
+                "Hip - Hop", "Jazz", "Metal", "New Age", "Oldies", "Other", "Pop", "R&B", "Rap", "Reggae", "Rock", "Techno",
+                "Industrial", "Alternative", "Ska", "Death Metal", "Pranks", "Soundtrack", "Euro -Techno", "Ambient",
+                "Trip -Hop", "Vocal", "Jazz Funk", "Fusion", "Trance", "Classical", "Instrumental", "Acid", "House", "Game",
+                "Sound Clip", "Gospel", "Noise", "AlternRock", "Bass", "Soul", "Punk", "Space", "Meditative",
+                "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic", "Darkwave", "Techno -Industrial", "Electronic",
+                "Pop -Folk", "Eurodance", "Dream", "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap",
+                "Pop/Funk", "Jungle", "Native American", "Cabaret", "New Wave", "Psychadelic", "Rave", "Showtunes", "Trailer",
+                "Lo - Fi", "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll", "Hard Rock",
+                "Folk", "Folk/Rock", "National Folk", "Swing", "Bebob", "Latin", "Revival", "Celtic", "Bluegrass", "Avantgarde",
+                "Gothic Rock", "Progressive Rock", "Psychedelic Rock", "Symphonic Rock", "Slow Rock", "Big Band", "Chorus",
+                "Easy Listening", "Acoustic", "Humour", "Speech", "Chanson", "Opera", "Chamber Music", "Sonata", "Symphony",
+                "Booty Bass", "Primus", "Porn Groove", "Satire", "Slow Jam", "Club", "Tango", "Samba", "Folklore", "Ballad",
+                "Power Ballad", "Rhythmic Soul", "Freestyle", "Duet", "Punk Rock", "Drum Solo", "A Cappella", "Euro - House",
+                "Dance Hall", "Goa", "Drum & Bass", "Club - House", "Hardcore", "Terror", "Indie", "BritPop", "Negerpunk",
+                "Polsk Punk", "Beat", "Christian Gangsta Rap", "Heavy Metal", "Black Metal", "Crossover", "Contemporary Christian",
                 "Christian Rock", "Merengue", "Salsa", "Thrash Metal", "Anime", "JPop", "Synthpop"}
                 Return strGenres(bytGenre)
             Catch ex As Exception

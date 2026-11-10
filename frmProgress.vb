@@ -9,7 +9,7 @@ Public Class frmProgress
         'Add any initialization after the InitializeComponent() call
         mBaseClass = objBase
         mOffset = Me.lblProgress.Top - Me.prgProgress.Top
-        prgProgress.Visible = CBool(mBaseClass.Count = 0)
+        prgProgress.Visible = CBool(mBaseClass.TotalFiles = 0)
     End Sub
 
 #Region " Windows Form Designer generated code "
@@ -32,42 +32,55 @@ Public Class frmProgress
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
     Friend WithEvents prgProgress As System.Windows.Forms.ProgressBar
+    Friend WithEvents btnCancel As Button
     Friend WithEvents lblProgress As System.Windows.Forms.Label
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
-        Me.prgProgress = New System.Windows.Forms.ProgressBar
-        Me.lblProgress = New System.Windows.Forms.Label
+        Me.prgProgress = New System.Windows.Forms.ProgressBar()
+        Me.lblProgress = New System.Windows.Forms.Label()
+        Me.btnCancel = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'prgProgress
         '
         Me.prgProgress.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.prgProgress.Location = New System.Drawing.Point(24, 20)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.prgProgress.Location = New System.Drawing.Point(20, 17)
         Me.prgProgress.Name = "prgProgress"
-        Me.prgProgress.Size = New System.Drawing.Size(624, 24)
+        Me.prgProgress.Size = New System.Drawing.Size(631, 21)
         Me.prgProgress.Step = 1
         Me.prgProgress.TabIndex = 0
         '
         'lblProgress
         '
         Me.lblProgress.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
-                    Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+            Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.lblProgress.FlatStyle = System.Windows.Forms.FlatStyle.System
-        Me.lblProgress.Location = New System.Drawing.Point(28, 64)
+        Me.lblProgress.Location = New System.Drawing.Point(23, 55)
         Me.lblProgress.Name = "lblProgress"
-        Me.lblProgress.Size = New System.Drawing.Size(620, 64)
+        Me.lblProgress.Size = New System.Drawing.Size(628, 64)
         Me.lblProgress.TabIndex = 1
+        '
+        'btnCancel
+        '
+        Me.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
+        Me.btnCancel.Location = New System.Drawing.Point(295, 122)
+        Me.btnCancel.Name = "btnCancel"
+        Me.btnCancel.Size = New System.Drawing.Size(75, 23)
+        Me.btnCancel.TabIndex = 2
+        Me.btnCancel.Text = "Cancel"
+        Me.btnCancel.UseVisualStyleBackColor = True
         '
         'frmProgress
         '
-        Me.AutoScaleBaseSize = New System.Drawing.Size(6, 15)
-        Me.ClientSize = New System.Drawing.Size(664, 136)
+        Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
+        Me.ClientSize = New System.Drawing.Size(664, 157)
+        Me.Controls.Add(Me.btnCancel)
         Me.Controls.Add(Me.lblProgress)
         Me.Controls.Add(Me.prgProgress)
         Me.MaximizeBox = False
-        Me.MaximumSize = New System.Drawing.Size(1024, 176)
-        Me.MinimumSize = New System.Drawing.Size(672, 176)
+        Me.MaximumSize = New System.Drawing.Size(680, 196)
+        Me.MinimumSize = New System.Drawing.Size(560, 153)
         Me.Name = "frmProgress"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "frmProgress"
@@ -96,11 +109,15 @@ Public Class frmProgress
             mOKtoClose = Value
         End Set
     End Property
-    Private Sub mBaseClass_List(ByVal Message As String) Handles mBaseClass.List
+    Private Sub mBaseClass_ListMessage(ByVal Message As String) Handles mBaseClass.ListMessage
         lblProgress.Text = Message
         With prgProgress
             If (.Value + 1) <= .Maximum Then .Value += 1
         End With
+        Application.DoEvents()
+    End Sub
+    Private Sub mBaseClass_ListTitle(ByVal Title As String) Handles mBaseClass.ListTitle
+        Me.Text = Title
         Application.DoEvents()
     End Sub
     Private Sub frmProgress_Closing(ByVal EventSender As Object, ByVal EventArgs As System.ComponentModel.CancelEventArgs) Handles MyBase.Closing
@@ -117,7 +134,7 @@ Public Class frmProgress
         With Me
             .prgProgress.Minimum = 0
             .prgProgress.Value = 0
-            .prgProgress.Maximum = mBaseClass.Count
+            .prgProgress.Maximum = mBaseClass.TotalFiles
             If Not .prgProgress.Visible Then
                 .lblProgress.Top = .prgProgress.Top
                 .Size = New System.Drawing.Size(.Width, .Height - mOffset)
@@ -126,5 +143,8 @@ Public Class frmProgress
                 .Size = New System.Drawing.Size(.Width, .Height + mOffset)
             End If
         End With
+    End Sub
+    Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
+        mBaseClass.Cancel = True
     End Sub
 End Class
