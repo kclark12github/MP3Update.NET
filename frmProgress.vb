@@ -110,7 +110,7 @@ Public Class frmProgress
         End Set
     End Property
     Private Sub mBaseClass_ListMessage(ByVal Message As String) Handles mBaseClass.ListMessage
-        lblProgress.Text = Message
+        lblProgress.Text = $"{(prgProgress.Value / prgProgress.Maximum):0%}: {Message}"
         With prgProgress
             If (.Value + 1) <= .Maximum Then .Value += 1
         End With

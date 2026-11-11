@@ -637,14 +637,14 @@ Public Class clsMP3Update
             Application.EnableVisualStyles()
             Application.DoEvents()
 
-            'If args.Length < 2 Then
-            '    Dim Message As String = _
-            '        "MP3Update Options:" & vbCrLf & _
-            '        vbTab & "args(0) = Full path name of the executable" & vbCrLf & _
-            '        vbTab & "args(1) = Root directory to check"
-            '    MessageBox.Show(Message, fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
-            '    Return 1
-            'End If
+            If args.Length < 2 Then
+                Dim Message As String =
+                    "MP3Update Options:" & vbCrLf &
+                    vbTab & "args(0) = Full path name of the executable" & vbCrLf &
+                    vbTab & "args(1) = Root directory to check"
+                MessageBox.Show(Message, fl.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.ServiceNotification)
+                Return 1
+            End If
             Dim RootDir As String = "D:\Users\kfc12\Music\Rock\Collins, Phil"  'args(1)
             Dim Root As DirectoryInfo = New DirectoryInfo(RootDir)
             If Not Root.Exists Then
