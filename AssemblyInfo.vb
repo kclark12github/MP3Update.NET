@@ -8,13 +8,13 @@ Imports System.Runtime.InteropServices
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("")> 
-<Assembly: AssemblyDescription("")> 
-<Assembly: AssemblyCompany("")> 
-<Assembly: AssemblyProduct("")> 
-<Assembly: AssemblyCopyright("")> 
-<Assembly: AssemblyTrademark("")> 
-<Assembly: CLSCompliant(True)> 
+<Assembly: CLSCompliant(True)>
+<Assembly: AssemblyCompany("KClark Software")>
+<Assembly: AssemblyCopyright("Copyright � 1998-2026, KClark Software")>
+<Assembly: AssemblyDescription("MP3Update.NET v1.0")>
+<Assembly: AssemblyProduct("MP3Update.NET")>
+<Assembly: AssemblyTrademark("MP3Update.NET�")>
+<Assembly: AssemblyCulture("")>
 
 'The following GUID is for the ID of the typelib if this project is exposed to COM
 <Assembly: Guid("F19BEA15-F657-479E-9B40-E3108A914434")> 
