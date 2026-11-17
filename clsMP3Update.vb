@@ -252,6 +252,7 @@ Public Class clsMP3Update
                 {"Emerson, Lake & Palmer", "ELP"},
                 {"Fine Young Cannibals", "FYC"},
                 {"Guns N' Roses", "GNR"},
+                {"Little River Band", "LRB"},
                 {"Stone Temple Pilots", "STP"},
                 {"The Steve Miller Band", "SMB"}
             }
@@ -265,11 +266,16 @@ Public Class clsMP3Update
             {"Bruce Hornsby & The Range", "HORNSBY, BRUCE, & THE RANGE"},
             {"Bruce Springsteen & The E Street Band", "SPRINGSTEEN, BRUCE, & THE E STREET BAND"},
             {"Edie Brickell & New Bohemians", "BRICKELL, EDIE, & NEW BOHEMIANS"},
+            {"Elvis Costello & The Attractions", "COSTELLO, ELVIS, & THE ATTRACTIONS"},
+            {"Elvis Costello & The Imposters", "COSTELLO, ELVIS, & THE IMPOSTERS"},
+            {"Elvis Costello & The Roots", "COSTELLO, ELVIS, & THE ROOTS"},
             {"George Thorogood & The Destroyers", "THOROGOOD, GEORGE, & THE DESTROYERS"},
+            {"Ringo Starr and His All Stard Band", "STARR, RINGO, AND HIS ALL-STARR BAND"},
             {"The Alan Parsons Project", "PARSONS, ALAN, PROJECT"},
             {"The Bob Seger System", "SEGER, BOB, SYSTEM"},
             {"The Steve Miller Band", "MILLER, STEVE, BAND"},
-            {"Tom Petty and The Heartbreakers", "PETTY, TOM, AND THE HEARTBREAKERS"}
+            {"Tom Petty and The Heartbreakers", "PETTY, TOM, AND THE HEARTBREAKERS"},
+            {"Wolfgang Amadeus Mozart", "MOZART, WOLFGANG AMADEUS"}
         }
         Select Case Artist
             Case ".38 Special",
@@ -332,6 +338,7 @@ Public Class clsMP3Update
                 "OK Go",
                 "Pearl Jam",
                 "Pink Floyd",
+                "Procol Harum",
                 "Quadriga Consort",
                 "Rascal Flats",
                 "Red Rider",
