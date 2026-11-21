@@ -5,6 +5,8 @@
 '
 '   Modification History:
 '   Date:       Description:
+'   11/21/26    Corrected file processing (enumerating a specific list of folders rather than the wonky semi-recursive code);
+'               Corrected CleanupFiles which had been based on existing files (therefore would never have found anything missing);
 '   11/15/26    Added History;
 '=================================================================================================================================
 Imports System.Collections.Generic
@@ -52,6 +54,8 @@ Public Class clsMP3Update
     Private mStartTime As Date = Now()
     Private mTotalFiles As Long = 0
     Private mSQLConnection As SqlClient.SqlConnection
+    Private targetFolders As String() = {"Christmas", "Classical", "Comedy", "Country", "Jazz", "New Age", "Radio Shows", "Rock", "Soundtrack"}
+    Private allowedExtensions As String() = {".mp3", ".flac"}
 #Region "Properties"
     Public ReadOnly Property AppName() As String
         Get
@@ -114,34 +118,28 @@ Public Class clsMP3Update
             Throw
         End Try
     End Sub
-    Public Sub CleanupFiles(ByVal BaseDir As DirectoryInfo)
+    Public Sub CleanupFiles(ByVal DatabaseName As String)
         Try
-            Dim diList As DirectoryInfo() = BaseDir.GetDirectories()
-            For Each di As DirectoryInfo In diList
-                Select Case di.Name
-                    Case "System Volume Information"
-                    Case "Temporary Internet Files"
-                    Case "Christmas", "Classical", "Comedy", "Country", "Jazz", "New Age", "Rock", "Soundtracks"
-                        If UIEnabled Then RaiseEvent ListMessage(di.FullName)
-                        Application.DoEvents() : If mCancel Then Exit Try
-                        ProcessFiles(di)
-                End Select
-            Next
-            Dim allowedExtensions As String() = {".mp3", ".flac"}
-            Dim audioFiles As Generic.IEnumerable(Of FileInfo) = BaseDir.EnumerateFiles("*.*", SearchOption.AllDirectories) _
-            .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
-            For Each fi As FileInfo In audioFiles
-                Try
-                    If Not fi.Exists Then
-                        If DBEnabled Then DoCommand($"Delete From Songs Where Path='{fi.FullName.Replace("'", "''").Replace("[", "[[]")}'")
-                    End If
-                    mProgressCount += 1
-                    If mProgressCount Mod 1000 = 0 Then Log.Information($"Processed {mProgressCount:#,##0} of {mTotalFiles:#,##0} ({mProgressCount / mTotalFiles:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}")
-                Catch ex As Exception
-                    mErrorCount += 1
-                    Log.Error(ex, $"Error processing {fi.FullName}; {vbCrLf}{vbCrLf}Exception: {ex.ToString}")
-                End Try
-            Next
+            Dim deletedCount As Integer = 0
+            Dim da As New SqlDataAdapter($"Select ID,Path From Songs", mSQLConnection)
+            Dim builder As SqlCommandBuilder = New SqlCommandBuilder(da)
+            Dim ds As New System.Data.DataSet
+            With da
+                Dim RecordCount As Integer = .Fill(ds)
+                Log.Information($"Processing {RecordCount:#,##0} Songs From {DatabaseName}.Songs...")
+                For Each drv As DataRowView In ds.Tables(0).DefaultView
+                    Try
+                        If Not System.IO.File.Exists(drv("Path")) Then
+                            If DBEnabled Then DoCommand($"Delete From Songs Where Path='{drv("Path").Replace("'", "''").Replace("[", "[[]")}'") : deletedCount += 1
+                        End If
+                        mProgressCount += 1
+                        If mProgressCount Mod 1000 = 0 OrElse mProgressCount = RecordCount Then Log.Information($"Processed {mProgressCount:#,##0} of {RecordCount:#,##0}; Deleted {deletedCount:#,##0} ({mProgressCount / RecordCount:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}")
+                    Catch ex As Exception
+                        mErrorCount += 1
+                        Log.Error(ex, $"Error processing {drv("Path")}; {vbCrLf}{vbCrLf}Exception: {ex.ToString}")
+                    End Try
+                Next
+            End With
         Catch ex As Exception
             Log.Error(ex, $"{mAppName}.CleanupFiles")
         Finally
@@ -151,29 +149,18 @@ Public Class clsMP3Update
     Public Sub CloseLog()
         Log.CloseAndFlush()
     End Sub
-    Public Sub CountFiles(ByVal BaseDir As DirectoryInfo, ByRef cntFolders As Long, ByRef cntFiles As Long)
+    Public Function CountFiles(ByVal BaseDir As DirectoryInfo, ByRef audioFiles As Generic.IEnumerable(Of FileInfo)) As Long
         Try
-            Dim diList As DirectoryInfo() = BaseDir.GetDirectories()
-            cntFolders = 0
-            cntFiles = 0
-            For Each di As DirectoryInfo In diList
-                Select Case di.Name
-                    Case "System Volume Information"
-                    Case "Temporary Internet Files"
-                    Case "Christmas", "Classical", "Comedy", "Country", "Jazz", "New Age", "Rock", "Soundtracks"
-                        cntFolders += 1
-                End Select
-            Next
-            Dim allowedExtensions As String() = {".mp3", ".flac"}
-            Dim audioFiles As Generic.IEnumerable(Of FileInfo) = BaseDir.EnumerateFiles("*.*", SearchOption.AllDirectories) _
-            .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
-            For Each fi As FileInfo In audioFiles
-                cntFiles += 1
-            Next
+            audioFiles = targetFolders _
+                    .Select(Function(folder) New DirectoryInfo(Path.Combine(BaseDir.FullName, folder))) _
+                    .Where(Function(dir) dir.Exists) _
+                    .SelectMany(Function(dir) dir.EnumerateFiles("*.*", SearchOption.AllDirectories)) _
+                    .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
+            Return audioFiles.LongCount
         Catch ex As Exception
             Log.Error(ex, $"{mAppName}.CountFiles")
         End Try
-    End Sub
+    End Function
     Public Sub DeleteOrphans()
         Try
             'DBEnabled = False
@@ -199,10 +186,11 @@ Public Class clsMP3Update
     End Sub
     Private Sub DoMilestone()
         mProgressCount += 1
-        If mProgressCount Mod 1000 <> 0 Then Return
+        If mProgressCount Mod 1000 <> 0 AndAlso mProgressCount <> mTotalFiles Then Return
         Dim Message As String = $"Processed {mProgressCount:#,##0} of {mTotalFiles:#,##0} ({mProgressCount / mTotalFiles:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}"
         Log.Information(Message)
         Debug.WriteLine(Message)
+        If mProgressCount = mTotalFiles Then mProgressCount = 0
     End Sub
     Public Function DoScalar(ByVal SQLSource As String) As Object
         Dim SQLCommand As New SqlClient.SqlCommand
@@ -463,28 +451,14 @@ Public Class clsMP3Update
         Log.Fatal(Message)
         mEventLog.WriteEntry(Message)
     End Sub
-    Public Sub ProcessFiles(ByVal BaseDir As DirectoryInfo)
+    Public Sub ProcessFiles(ByVal audioFiles As Generic.IEnumerable(Of FileInfo))
         Try
-            Dim diList As DirectoryInfo() = BaseDir.GetDirectories()
-            For Each di As DirectoryInfo In diList
-                Select Case di.Name
-                    Case "System Volume Information"
-                    Case "Temporary Internet Files"
-                    Case "Christmas", "Classical", "Comedy", "Country", "Jazz", "New Age", "Radio Shows", "Rock", "Soundtracks"
-                        Log.Information($"{vbTab}Processing Folder:  {di.FullName}")
-                        ProcessFiles(di)
-                End Select
-            Next
-            Dim allowedExtensions As String() = {".mp3", ".flac"}
-            Dim audioFiles As Generic.IEnumerable(Of FileInfo) = BaseDir.EnumerateFiles("*.*", SearchOption.AllDirectories) _
-            .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
             For Each fi As FileInfo In audioFiles
                 Dim Path As String = fi.FullName
                 Try
-
-                    Dim Song As myTag = New myTag(TagLib.File.Create(Path), Path)
-                    Dim ID As Integer = DoScalar($"Select ID From Songs Where Path Like '%{Path.Replace("'", "''").Replace("[", "[[]")}'")
                     If DBEnabled Then
+                        Dim Song As myTag = New myTag(TagLib.File.Create(Path), Path)
+                        Dim ID As Integer = DoScalar($"Select ID From Songs Where Path Like '%{Path.Replace("'", "''").Replace("[", "[[]")}'")
                         If IsNothing(ID) OrElse IsDBNull(ID) OrElse ID = 0 Then
                             AddSong(Song, Path)
                         Else
@@ -502,7 +476,6 @@ Public Class clsMP3Update
         Catch ex As Exception
             Log.Error(ex, $"{mAppName}.ProcessFiles")
         Finally
-            mProgressCount = 0
         End Try
     End Sub
     Public Sub SendSummaryEmail(subject As String, bodyText As String, Optional attachmentPath As String = Nothing, Optional isHtml As Boolean = False)
@@ -542,10 +515,11 @@ Public Class clsMP3Update
         Dim ConnectionString As String
         Dim Status As String = String.Empty
         Dim Root As DirectoryInfo = New DirectoryInfo(RootDir)
+        Dim audioFiles As Generic.IEnumerable(Of FileInfo) = Nothing
         Try
             If Not Root.Exists Then Log.Fatal($"{RootDir} does Not exist!") : Return 1
 
-            Log.Information($"{mAppName} - Listing Files From {Root.Name} into {DatabaseName}.Songs")
+            Log.Information($"{mAppName} - Processing Files From {Root.Name} into {DatabaseName}.Songs; Database Updates Enabled: {DBEnabled}")
             Log.Information($"Connecting To {DatabaseName}")
 
             ConnectionString = $"Application Name= {mAppName};Data Source={SystemInformation.ComputerName};Initial Catalog={DatabaseName};Integrated Security=SSPI;Workstation ID={SystemInformation.ComputerName};"
@@ -553,21 +527,15 @@ Public Class clsMP3Update
             mSQLConnection.Open()
 
             Log.Information("Determining File Count...")
-            Try
-                Dim cntFolders As Long = 0
-                Dim cntFiles As Long = 0
-                CountFiles(Root, cntFolders, cntFiles)
-                mTotalFiles = cntFiles
-            Catch ex As Exception
-            End Try
+            Try : mTotalFiles = CountFiles(Root, audioFiles) : Catch ex As Exception : End Try
 
             Log.Information("Cleaning up deleted files...")
-            CleanupFiles(Root)
+            CleanupFiles(DatabaseName)
 
-            Log.Information($"Processing {mTotalFiles:#,##0} audio files From {Root.Name} into {DatabaseName}.Songs...")
-            ProcessFiles(Root)
+            Log.Information($"Processing {mTotalFiles:#,##0} audio files from {Root.Name} into {DatabaseName}.Songs...")
+            ProcessFiles(audioFiles)
 
-            Log.Information($"Deleting unreferenced Artists and Albums From {Root.Name} into {DatabaseName}.Songs...")
+            Log.Information($"Deleting unreferenced Artists and Albums in {Root.Name} from {DatabaseName}.Songs...")
             DeleteOrphans()
 
             Status = "Complete"
