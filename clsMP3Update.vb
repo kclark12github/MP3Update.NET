@@ -12,6 +12,7 @@
 Imports System.Collections.Generic
 Imports System.Data.Common
 Imports System.Data.SqlClient
+Imports System.Globalization
 Imports System.IO
 Imports System.Linq
 Imports System.Runtime.CompilerServices
@@ -126,22 +127,23 @@ Public Class clsMP3Update
             Dim ds As New System.Data.DataSet
             With da
                 Dim RecordCount As Integer = .Fill(ds)
-                Log.Information($"Processing {RecordCount:#,##0} Songs From {DatabaseName}.Songs...")
+                LogInfoMessage($"Processing {RecordCount:#,##0} Songs From {DatabaseName}.Songs...")
                 For Each drv As DataRowView In ds.Tables(0).DefaultView
                     Try
                         If Not System.IO.File.Exists(drv("Path")) Then
+                            LogInfoMessage($"File not found ""{drv("Path")}"" - deleting from Songs")
                             If DBEnabled Then DoCommand($"Delete From Songs Where Path='{drv("Path").Replace("'", "''").Replace("[", "[[]")}'") : deletedCount += 1
                         End If
                         mProgressCount += 1
-                        If mProgressCount Mod 1000 = 0 OrElse mProgressCount = RecordCount Then Log.Information($"Processed {mProgressCount:#,##0} of {RecordCount:#,##0}; Deleted {deletedCount:#,##0} ({mProgressCount / RecordCount:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}")
+                        If mProgressCount Mod 1000 = 0 OrElse mProgressCount = RecordCount Then LogInfoMessage($"Processed {mProgressCount:#,##0} of {RecordCount:#,##0}; Deleted {deletedCount:#,##0} ({mProgressCount / RecordCount:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}")
                     Catch ex As Exception
                         mErrorCount += 1
-                        Log.Error(ex, $"Error processing {drv("Path")}; {vbCrLf}{vbCrLf}Exception: {ex.ToString}")
+                        LogErrorMessage(ex, $"Error processing {drv("Path")}; {vbCrLf}{vbCrLf}Exception: {ex.ToString}")
                     End Try
                 Next
             End With
         Catch ex As Exception
-            Log.Error(ex, $"{mAppName}.CleanupFiles")
+            LogErrorMessage(ex, $"{mAppName}.CleanupFiles")
         Finally
             mProgressCount = 0
         End Try
@@ -149,16 +151,43 @@ Public Class clsMP3Update
     Public Sub CloseLog()
         Log.CloseAndFlush()
     End Sub
-    Public Function CountFiles(ByVal BaseDir As DirectoryInfo, ByRef audioFiles As Generic.IEnumerable(Of FileInfo)) As Long
+    Public Function CountFiles(ByVal BaseDir As DirectoryInfo, ByRef audioFiles As Generic.IEnumerable(Of FileInfo), ByVal ListFile As FileInfo) As Long
         Try
-            audioFiles = targetFolders _
+            If Not IsNothing(ListFile) Then
+                Try
+                    Dim commentPrefixes As String() = {"#", ";", "//"}
+                    audioFiles = System.IO.File.ReadLines(ListFile.FullName) _
+                        .Select(Function(line) New String(line.Where(Function(c) Not Char.IsControl(c) AndAlso
+                                                                                 Char.GetUnicodeCategory(c) <> UnicodeCategory.Format).ToArray()).Trim()) _
+                        .Where(Function(line) Not String.IsNullOrWhiteSpace(line) AndAlso
+                                              Not commentPrefixes.Any(Function(prefix) line.StartsWith(prefix))) _
+                        .Select(Function(line) line.Trim(""""c)) _
+                        .Where(Function(p) Path.IsPathRooted(p)) _
+                        .Select(Function(p) New FileInfo(p)) _
+                        .ToList()
+                Catch ex As NotSupportedException
+                    Dim lineNumber As Integer = 0
+                    For Each rawLine As String In System.IO.File.ReadLines(ListFile.FullName)
+                        lineNumber += 1
+                        Dim cleanPath As String = rawLine.Trim().Trim(""""c)
+                        If String.IsNullOrWhiteSpace(cleanPath) Then Continue For
+                        Try : Dim fi As New FileInfo(cleanPath) : Catch ex2 As NotSupportedException : Debug.WriteLine($"Line {lineNumber} failed: [{rawLine}]") : End Try
+                    Next
+                    Throw
+                End Try
+            ElseIf BaseDir.Name = "Music" Then
+                audioFiles = targetFolders _
                     .Select(Function(folder) New DirectoryInfo(Path.Combine(BaseDir.FullName, folder))) _
                     .Where(Function(dir) dir.Exists) _
                     .SelectMany(Function(dir) dir.EnumerateFiles("*.*", SearchOption.AllDirectories)) _
                     .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
+            Else
+                audioFiles = BaseDir.EnumerateFiles("*.*", SearchOption.AllDirectories) _
+                    .Where(Function(f) allowedExtensions.Contains(f.Extension.ToLower()))
+            End If
             Return audioFiles.LongCount
         Catch ex As Exception
-            Log.Error(ex, $"{mAppName}.CountFiles")
+            LogErrorMessage(ex, $"{mAppName}.CountFiles")
         End Try
     End Function
     Public Sub DeleteOrphans()
@@ -166,7 +195,7 @@ Public Class clsMP3Update
             'DBEnabled = False
             If DBEnabled Then DoCommand($"Delete From Albums Where Not Exists(Select * From Songs s Where Albums.ID=s.AlbumID);Delete From Artists Where Not Exists(Select * From Songs s Where Artists.ID=s.ArtistID);")
         Catch ex As Exception
-            Log.Error(ex, $"{mAppName}.DeleteOrphans")
+            LogErrorMessage(ex, $"{mAppName}.DeleteOrphans")
         End Try
     End Sub
     Public Sub DoCommand(ByVal SQLSource As String)
@@ -188,8 +217,7 @@ Public Class clsMP3Update
         mProgressCount += 1
         If mProgressCount Mod 1000 <> 0 AndAlso mProgressCount <> mTotalFiles Then Return
         Dim Message As String = $"Processed {mProgressCount:#,##0} of {mTotalFiles:#,##0} ({mProgressCount / mTotalFiles:0.00%} w/{mErrorCount:#,##0} Errors - Elapsed: {ElapsedTime(mStartTime, Now)}"
-        Log.Information(Message)
-        Debug.WriteLine(Message)
+        LogInfoMessage(Message)
         If mProgressCount = mTotalFiles Then mProgressCount = 0
     End Sub
     Public Function DoScalar(ByVal SQLSource As String) As Object
@@ -445,11 +473,29 @@ Public Class clsMP3Update
                 outputTemplate:="{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
             ) _
             .CreateLogger()
-        Log.Information($"[{mAppName} © {mStartTime:yyyy}, Ken Clark                       {mStartTime:MM/dd/yy hh:mm:ss tt}]")
+        LogInfoMessage($"[{mAppName} © {mStartTime:yyyy}, Ken Clark                       {mStartTime:MM/dd/yy hh:mm:ss tt}]")
+    End Sub
+    Public Sub LogErrorMessage(ByVal ex As Exception, ByVal Message As String)
+        Log.Error(ex, Message)
+        Debug.WriteLine(Message)
+        mEventLog.WriteEntry(Message)
+    End Sub
+    Public Sub LogErrorMessage(ByVal Message As String)
+        Log.Error(Message)
+        Debug.WriteLine(Message)
+        mEventLog.WriteEntry(Message)
+    End Sub
+    Public Sub LogFatalMessage(ByVal ex As Exception, ByVal Message As String)
+        Log.Fatal(ex, Message)
+        mEventLog.WriteEntry(Message)
     End Sub
     Public Sub LogFatalMessage(ByVal Message As String)
         Log.Fatal(Message)
         mEventLog.WriteEntry(Message)
+    End Sub
+    Public Sub LogInfoMessage(ByVal Message As String, Optional ByVal echo As Boolean = True)
+        Log.Information(Message)
+        If echo Then Debug.WriteLine(Message)
     End Sub
     Public Sub ProcessFiles(ByVal audioFiles As Generic.IEnumerable(Of FileInfo))
         Try
@@ -465,16 +511,16 @@ Public Class clsMP3Update
                             UpdateSong(Song, ID)
                         End If
                     End If
-                    Log.Information($"{vbTab}{vbTab}{Path}")
+                    LogInfoMessage($"{vbTab}{vbTab}{Path}", False)
                     DoMilestone()
                 Catch ex As Exception
                     mErrorCount += 1
-                    Log.Error($"{vbTab}{vbTab}{ex.GetType().Name}: {ex.Message} - {Path}")
+                    LogErrorMessage($"{vbTab}{vbTab}{ex.GetType().Name}: {ex.Message} - {Path}")
                     mErrorList &= $"{ex.GetType().Name}: {ex.Message} - {Path}{vbCrLf}"
                 End Try
             Next
         Catch ex As Exception
-            Log.Error(ex, $"{mAppName}.ProcessFiles")
+            LogErrorMessage(ex, $"{mAppName}.ProcessFiles")
         Finally
         End Try
     End Sub
@@ -511,38 +557,38 @@ Public Class clsMP3Update
             client.Disconnect(True)
         End Using
     End Sub
-    Public Function UpdateDB(ByVal RootDir As String, ByVal DatabaseName As String) As Integer
+    Public Function UpdateDB(ByVal RootDir As String, ByVal DatabaseName As String, ByVal ListFile As FileInfo) As Integer
         Dim ConnectionString As String
         Dim Status As String = String.Empty
         Dim Root As DirectoryInfo = New DirectoryInfo(RootDir)
         Dim audioFiles As Generic.IEnumerable(Of FileInfo) = Nothing
         Try
-            If Not Root.Exists Then Log.Fatal($"{RootDir} does Not exist!") : Return 1
+            LogInfoMessage($"{mAppName} - Processing Files From {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs; Database Updates Enabled: {DBEnabled}")
+            If Not Root.Exists Then LogFatalMessage($"{RootDir} does Not exist!") : Return 1
+            If Not IsNothing(ListFile) AndAlso Not ListFile.Exists Then LogFatalMessage($"{ListFile.Name} does Not exist!") : Return 1
 
-            Log.Information($"{mAppName} - Processing Files From {Root.Name} into {DatabaseName}.Songs; Database Updates Enabled: {DBEnabled}")
-            Log.Information($"Connecting To {DatabaseName}")
+            LogInfoMessage("Determining File Count...")
+            Try : mTotalFiles = CountFiles(Root, audioFiles, ListFile) : Catch ex As Exception : End Try
 
+            LogInfoMessage($"Connecting To {DatabaseName}")
             ConnectionString = $"Application Name= {mAppName};Data Source={SystemInformation.ComputerName};Initial Catalog={DatabaseName};Integrated Security=SSPI;Workstation ID={SystemInformation.ComputerName};"
             mSQLConnection = New SqlClient.SqlConnection(ConnectionString)
             mSQLConnection.Open()
 
-            Log.Information("Determining File Count...")
-            Try : mTotalFiles = CountFiles(Root, audioFiles) : Catch ex As Exception : End Try
-
-            Log.Information("Cleaning up deleted files...")
+            LogInfoMessage("Cleaning up deleted files...")
             CleanupFiles(DatabaseName)
 
-            Log.Information($"Processing {mTotalFiles:#,##0} audio files from {Root.Name} into {DatabaseName}.Songs...")
+            LogInfoMessage($"Processing {mTotalFiles:#,##0} audio files from {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs...")
             ProcessFiles(audioFiles)
 
-            Log.Information($"Deleting unreferenced Artists and Albums in {Root.Name} from {DatabaseName}.Songs...")
+            LogInfoMessage($"Deleting unreferenced Artists and Albums in {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} from {DatabaseName}.Songs...")
             DeleteOrphans()
 
             Status = "Complete"
             Return 0
         Catch ex As Exception
             Status = "Failed"
-            Log.Fatal(ex, "Fatal error occurred during unattended MP3 import.")
+            LogFatalMessage(ex, "Fatal error occurred during unattended MP3 import.")
             Environment.ExitCode = 1 ' Signals failure to Windows Task Scheduler
         Finally
             Dim Message As String = $"{mAppName} {Status} - {mTotalFiles:#,##0} entries written to {DatabaseName}.Songs with {mErrorCount:#,##0} errors.{vbCrLf}{vbCrLf}See attached log for details.{vbCrLf}{vbCrLf}Elapsed Time: {ElapsedTime(mStartTime, Now)}{vbCrLf}{vbCrLf}{mErrorList}"
@@ -597,15 +643,18 @@ Public Class clsMP3Update
         Try
             If args.Length < 3 Then
                 Dim Message As String =
-                    "MP3Update Options:" & vbCrLf &
-                    vbTab & "args(0) = Full path name of the executable" & vbCrLf &
-                    vbTab & "args(1) = Root directory to list files" & vbCrLf &
-                    vbTab & "args(2) = Database name"
+                    $"MP3Update Options:{vbCrLf}" &
+                    $"{vbTab}args(0) = Full path name of the executable{vbCrLf}" &
+                    $"{vbTab}args(1) = Root directory{vbCrLf}" &
+                    $"{vbTab}args(2) = Database name{vbCrLf}" &
+                    $"{vbTab}args(3) = List File (optional - overrides Root directory)"
                 Throw New ArgumentException(Message)
             End If
             Dim RootDir As String = args(1)
             Dim DatabaseName As String = args(2)
-            Return udb.UpdateDB(RootDir, DatabaseName)
+            Dim ListFile As FileInfo = Nothing
+            If Not IsNothing(args(3)) Then ListFile = New FileInfo(args(3))
+            Return udb.UpdateDB(RootDir, DatabaseName, ListFile)
         Catch ex As Exception
             Dim Message As String = $"{udb.AppName} Failed - {ex.GetType().Name}{vbCrLf}{vbCrLf}{ex.Message}"
             udb.LogFatalMessage(ex.Message)
