@@ -257,7 +257,10 @@ Public Class clsMP3Update
         End Select
     End Function
     Private Function EscapedValue(ByVal Value As String) As String
-        Return Value.Replace("'", "''").Replace("[", "[[]")
+        Return FixQuotes(Value).Replace("[", "[[]")
+    End Function
+    Private Function FixQuotes(ByVal Value As String) As String
+        Return Value.Replace("'", "''")
     End Function
     Private Function GetAKA(ByVal Artist As String) As String
         Dim akalist As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -402,7 +405,7 @@ Public Class clsMP3Update
     End Function
     Private Function GetAlbum(ByVal Song As myTag) As Integer
         Try
-            GetAlbum = DoScalar($"Select ID From Albums Where Artist=N'{EscapedValue(Song.Artist)}' And Title=N'{EscapedValue(Song.Album)}' And Year={Song.Year}")
+            GetAlbum = DoScalar($"Select ID From Albums Where Artist=N'{FixQuotes(Song.Artist)}' And Title=N'{FixQuotes(Song.Album)}' And Year={Song.Year}")
             If IsNothing(GetAlbum) OrElse IsDBNull(GetAlbum) OrElse GetAlbum = 0 Then
                 Dim SQLSource As String = $"Insert Into Albums (Artist,Title,Year) Values (@Artist,@Title,@Year);Select SCOPE_IDENTITY();"
                 Dim da As New SqlDataAdapter
@@ -427,7 +430,7 @@ Public Class clsMP3Update
     End Function
     Private Function GetArtist(ByVal Song As myTag) As Integer
         Try
-            GetArtist = DoScalar($"Select ID From Artists Where Name=N'{EscapedValue(Song.Artist)}'")
+            GetArtist = DoScalar($"Select ID From Artists Where Name=N'{FixQuotes(Song.Artist)}'")
             If IsNothing(GetArtist) OrElse IsDBNull(GetArtist) OrElse GetArtist = 0 Then
                 Dim SQLSource As String = $"Insert Into Artists (Name,AlphaSort,AKA) Values (@Name,@AlphaSort,@AKA);Select SCOPE_IDENTITY();"
                 Dim da As New SqlDataAdapter
