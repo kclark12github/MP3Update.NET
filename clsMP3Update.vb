@@ -563,7 +563,7 @@ Public Class clsMP3Update
         Dim Root As DirectoryInfo = New DirectoryInfo(RootDir)
         Dim audioFiles As Generic.IEnumerable(Of FileInfo) = Nothing
         Try
-            LogInfoMessage($"{mAppName} - Processing Files From {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs; Database Updates Enabled: {DBEnabled}")
+            LogInfoMessage($"{mAppName} - Processing Files From {If(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs; Database Updates Enabled: {DBEnabled}")
             If Not Root.Exists Then LogFatalMessage($"{RootDir} does Not exist!") : Return 1
             If Not IsNothing(ListFile) AndAlso Not ListFile.Exists Then LogFatalMessage($"{ListFile.Name} does Not exist!") : Return 1
 
