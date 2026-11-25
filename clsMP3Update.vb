@@ -653,7 +653,7 @@ Public Class clsMP3Update
             Dim RootDir As String = args(1)
             Dim DatabaseName As String = args(2)
             Dim ListFile As FileInfo = Nothing
-            If Not IsNothing(args(3)) Then ListFile = New FileInfo(args(3))
+            If args.Length = 4 Then ListFile = New FileInfo(args(3))
             Return udb.UpdateDB(RootDir, DatabaseName, ListFile)
         Catch ex As Exception
             Dim Message As String = $"{udb.AppName} Failed - {ex.GetType().Name}{vbCrLf}{vbCrLf}{ex.Message}"
