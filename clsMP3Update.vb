@@ -256,6 +256,9 @@ Public Class clsMP3Update
                 ElapsedTime = strTime
         End Select
     End Function
+    Private Function EscapedValue(ByVal Value As String) As String
+        Return Value.Replace("'", "''").Replace("[", "[[]")
+    End Function
     Private Function GetAKA(ByVal Artist As String) As String
         Dim akalist As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
                 {"Bachman - Turner Overdrive", "BTO"},
@@ -399,7 +402,7 @@ Public Class clsMP3Update
     End Function
     Private Function GetAlbum(ByVal Song As myTag) As Integer
         Try
-            GetAlbum = DoScalar($"Select ID From Albums Where Artist='{Song.Artist.Replace("'", "''").Replace("[", "[[]")}' And Title='{Song.Album.Replace("'", "''").Replace("[", "[[]")}' And Year={Song.Year}")
+            GetAlbum = DoScalar($"Select ID From Albums Where Artist=N'{EscapedValue(Song.Artist)}' And Title=N'{EscapedValue(Song.Album)}' And Year={Song.Year}")
             If IsNothing(GetAlbum) OrElse IsDBNull(GetAlbum) OrElse GetAlbum = 0 Then
                 Dim SQLSource As String = $"Insert Into Albums (Artist,Title,Year) Values (@Artist,@Title,@Year);Select SCOPE_IDENTITY();"
                 Dim da As New SqlDataAdapter
@@ -424,7 +427,7 @@ Public Class clsMP3Update
     End Function
     Private Function GetArtist(ByVal Song As myTag) As Integer
         Try
-            GetArtist = DoScalar($"Select ID From Artists Where Name='{Song.Artist.Replace("'", "''").Replace("[", "[[]")}'")
+            GetArtist = DoScalar($"Select ID From Artists Where Name=N'{EscapedValue(Song.Artist)}'")
             If IsNothing(GetArtist) OrElse IsDBNull(GetArtist) OrElse GetArtist = 0 Then
                 Dim SQLSource As String = $"Insert Into Artists (Name,AlphaSort,AKA) Values (@Name,@AlphaSort,@AKA);Select SCOPE_IDENTITY();"
                 Dim da As New SqlDataAdapter
@@ -504,7 +507,7 @@ Public Class clsMP3Update
                 Try
                     If DBEnabled Then
                         Dim Song As myTag = New myTag(TagLib.File.Create(Path), Path)
-                        Dim ID As Integer = DoScalar($"Select ID From Songs Where Path Like '%{Path.Replace("'", "''").Replace("[", "[[]")}'")
+                        Dim ID As Integer = DoScalar($"Select ID From Songs Where Path Like N'%{EscapedValue(Path)}'")
                         If IsNothing(ID) OrElse IsDBNull(ID) OrElse ID = 0 Then
                             AddSong(Song, Path)
                         Else
