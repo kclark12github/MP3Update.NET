@@ -578,10 +578,10 @@ Public Class clsMP3Update
             LogInfoMessage("Cleaning up deleted files...")
             CleanupFiles(DatabaseName)
 
-            LogInfoMessage($"Processing {mTotalFiles:#,##0} audio files from {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs...")
+            LogInfoMessage($"Processing {mTotalFiles:#,##0} audio files from {If(IsNothing(ListFile), Root.Name, ListFile.Name)} into {DatabaseName}.Songs...")
             ProcessFiles(audioFiles)
 
-            LogInfoMessage($"Deleting unreferenced Artists and Albums in {IIf(IsNothing(ListFile), Root.Name, ListFile.Name)} from {DatabaseName}.Songs...")
+            LogInfoMessage($"Deleting unreferenced Artists and Albums in {If(IsNothing(ListFile), Root.Name, ListFile.Name)} from {DatabaseName}.Songs...")
             DeleteOrphans()
 
             Status = "Complete"
